@@ -1,6 +1,6 @@
 <h1 align="center">Visual Studio Code Apollo Theme</h1>
 
-<p align="center">Apollo brings a warm, high-contrast dark palette to Visual Studio Code across the editor, workbench, terminal, and development surfaces.</p>
+<p align="center">Apollo brings warm, high-contrast dark and light palettes to Visual Studio Code across the editor, workbench, terminal, and development surfaces.</p>
 
 <p align="center">
   <a href="https://apollo-theme.github.io/#app-vscode"><img alt="Preview" src="https://img.shields.io/badge/Preview-open-fabd2f?style=flat-square&amp;labelColor=141617"></a>
@@ -13,6 +13,7 @@
 
 <p align="center">
   <a href="https://apollo-theme.github.io/#app-vscode"><picture><source srcset="https://raw.githubusercontent.com/apollo-theme/apollo-theme.github.io/main/previews/vscode.svg" type="image/svg+xml"><img alt="Simulated preview of Apollo in Visual Studio Code" src="https://img.shields.io/badge/Apollo-Visual%20Studio%20Code-fabd2f?style=for-the-badge&amp;labelColor=141617" width="960"></picture></a>
+  <a href="https://apollo-theme.github.io/#app-vscode-light"><picture><source srcset="https://raw.githubusercontent.com/apollo-theme/apollo-theme.github.io/main/previews/vscode-light.svg" type="image/svg+xml"><img alt="Simulated preview of Apollo Light in Visual Studio Code" src="https://img.shields.io/badge/Apollo%20Light-Visual%20Studio%20Code-8a5200?style=for-the-badge&amp;labelColor=f9f5d7" width="960"></picture></a>
 </p>
 <p align="center"><sub><strong>Simulated preview.</strong> Application chrome and typography may vary; follow the visual checks below against the canonical palette.</sub></p>
 
@@ -43,14 +44,14 @@ code --user-data-dir /tmp/apollo-vscode-profile --extensions-dir /tmp/apollo-vsc
 
 ## Activate
 
-Open **Preferences: Color Theme** and select **Apollo**. Choosing a theme changes VS Code's color-theme setting; use an isolated profile if you do not want to alter your normal profile.
+Open **Preferences: Color Theme** and select **Apollo** or **Apollo Light**. Both ship in the same VSIX. Choosing a theme changes VS Code's color-theme setting; use an isolated profile if you do not want to alter your normal profile.
 
 ## Visual verification
 
 Verify all of the following in VS Code:
 
-- Editor canvas is near-black `#141617`; ordinary source text is warm `#cfbc97`.
-- Active focus, cursor, active line number, and find matches use gold `#fabd2f`.
+- Apollo uses canvas `#141617` with source text `#cfbc97`; Apollo Light uses paper `#f9f5d7` with text `#3c3836`.
+- Active focus, cursor, active line number, and find matches use each variant's accent (`#fabd2f` dark, `#8a5200` light).
 - Errors are red, warnings gold, information blue, and successful tests/Git additions green.
 - Comments remain readable muted brown and `#665c54` is never used for normal text.
 - JavaScript/TypeScript, Python, C#, JSON, CSS/HTML, Markdown, and diff views show distinct functions, types, properties, strings, constants, and markup.
@@ -82,7 +83,7 @@ Run one focused test with:
 python3 -m unittest tests.test_theme.VSCodeThemeTests.test_terminal_arrays_match_palette
 ```
 
-`themes/apollo-color-theme.json` is deterministic generated output. Change `scripts/generate.py` for mapping changes, then regenerate. `palette/apollo.json` is a fixed snapshot and must remain byte-for-byte canonical.
+`themes/apollo-color-theme.json` and `themes/apollo-light-color-theme.json` are deterministic generated outputs. Change `scripts/generate.py` for mapping changes, then regenerate. Both files under `palette/` are fixed snapshots and must remain byte-for-byte canonical.
 
 ## License
 

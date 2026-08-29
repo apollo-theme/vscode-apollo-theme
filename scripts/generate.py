@@ -4,14 +4,21 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-PALETTE_PATH = ROOT / "palette" / "apollo.json"
-OUTPUT_PATH = ROOT / "themes" / "apollo-color-theme.json"
+PALETTE_SHA256 = {
+    "apollo": "550f8c36cf4ef6ac99551541d1fe9554f77d563fa1e7c129a6a82583321d61ef",
+    "apollo-light": "b0dbdeb719ed1931c424e9590562689325ecac1609e2fed6406ec5c4d3dc5763",
+}
+VARIANTS = (
+    ("apollo", "dark", ROOT / "palette" / "apollo.json", ROOT / "themes" / "apollo-color-theme.json"),
+    ("apollo-light", "light", ROOT / "palette" / "apollo-light.json", ROOT / "themes" / "apollo-light-color-theme.json"),
+)
 
 
 def alpha(color: str, value: int) -> str:
@@ -414,8 +421,8 @@ def build_theme(palette: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "$schema": "vscode://schemas/color-theme",
-        "name": "Apollo",
-        "type": "dark",
+        "name": palette["name"],
+        "type": palette["appearance"],
         "semanticHighlighting": True,
         "colors": colors,
         "tokenColors": token_colors,
@@ -427,25 +434,63 @@ def render_theme(palette: dict[str, Any]) -> str:
     return json.dumps(build_theme(palette), indent=2, ensure_ascii=False) + "\n"
 
 
+def load_palette(expected_id: str, appearance: str, path: Path) -> dict[str, Any]:
+    palette_bytes = path.read_bytes()
+    digest = hashlib.sha256(palette_bytes).hexdigest()
+    if digest != PALETTE_SHA256[expected_id]:
+        raise ValueError(f"{path.relative_to(ROOT)} differs from canonical SHA-256: {digest}")
+    palette = json.loads(palette_bytes)
+    if palette.get("schemaVersion") != 1 or palette.get("id") != expected_id:
+        raise ValueError(f"{path.relative_to(ROOT)} has invalid identity")
+    if palette.get("appearance") != appearance or palette.get("colorSpace") != "srgb":
+        raise ValueError(f"{path.relative_to(ROOT)} must be the {appearance} sRGB variant")
+    return palette
+
+
+def render_all() -> dict[Path, str]:
+    return {
+        output_path: render_theme(load_palette(variant_id, appearance, palette_path))
+        for variant_id, appearance, palette_path, output_path in VARIANTS
+    }
+
+
+def write_or_check(outputs: dict[Path, str], check: bool) -> int:
+    unexpected = sorted(set((ROOT / "themes").glob("*-color-theme.json")) - set(outputs))
+    if unexpected:
+        for path in unexpected:
+            print(f"unexpected generated output: {path.relative_to(ROOT)}", file=sys.stderr)
+        return 1
+
+    stale: list[Path] = []
+    for path, expected in outputs.items():
+        if check:
+            actual = path.read_text(encoding="utf-8") if path.exists() else ""
+            if actual != expected:
+                stale.append(path)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(expected, encoding="utf-8", newline="\n")
+            print(f"wrote {path.relative_to(ROOT)}")
+
+    if stale:
+        for path in stale:
+            print(f"{path.relative_to(ROOT)} is stale; run python3 scripts/generate.py", file=sys.stderr)
+        return 1
+    if check:
+        print("current: " + ", ".join(str(path.relative_to(ROOT)) for path in outputs))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="fail if the generated theme is stale")
+    parser.add_argument("--check", action="store_true", help="fail if a generated theme is stale")
     args = parser.parse_args()
-    palette = json.loads(PALETTE_PATH.read_text(encoding="utf-8"))
-    expected = render_theme(palette)
-
-    if args.check:
-        actual = OUTPUT_PATH.read_text(encoding="utf-8") if OUTPUT_PATH.exists() else ""
-        if actual != expected:
-            print(f"{OUTPUT_PATH.relative_to(ROOT)} is stale; run python3 scripts/generate.py", file=sys.stderr)
-            return 1
-        print(f"{OUTPUT_PATH.relative_to(ROOT)} is current")
-        return 0
-
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(expected, encoding="utf-8", newline="\n")
-    print(f"wrote {OUTPUT_PATH.relative_to(ROOT)}")
-    return 0
+    try:
+        outputs = render_all()
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"generation failed: {error}", file=sys.stderr)
+        return 2
+    return write_or_check(outputs, args.check)
 
 
 if __name__ == "__main__":

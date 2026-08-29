@@ -77,6 +77,41 @@ class VSCodeThemeTests(unittest.TestCase):
         for scope in ("comment", "entity.name.function", "entity.name.type", "keyword.control", "markup.heading", "string"):
             self.assertIn(scope, scopes)
 
+    def test_light_variant_contract(self) -> None:
+        palette_path = ROOT / "palette" / "apollo-light.json"
+        self.assertEqual(
+            hashlib.sha256(palette_path.read_bytes()).hexdigest(),
+            "b0dbdeb719ed1931c424e9590562689325ecac1609e2fed6406ec5c4d3dc5763",
+        )
+        palette = json.loads(palette_path.read_text(encoding="utf-8"))
+        theme_path = ROOT / "themes" / "apollo-light-color-theme.json"
+        theme_text = theme_path.read_text(encoding="utf-8")
+        theme = json.loads(theme_text)
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
+
+        self.assertEqual((palette["id"], palette["appearance"]), ("apollo-light", "light"))
+        self.assertEqual((theme["name"], theme["type"]), ("Apollo Light", "light"))
+        self.assertEqual(theme_text, generate.render_theme(palette))
+        self.assertEqual(theme["colors"]["editor.background"], palette["colors"]["background"])
+        self.assertEqual(
+            package["contributes"]["themes"],
+            [
+                {"label": "Apollo", "uiTheme": "vs-dark", "path": "./themes/apollo-color-theme.json"},
+                {"label": "Apollo Light", "uiTheme": "vs", "path": "./themes/apollo-light-color-theme.json"},
+            ],
+        )
+        self.assertEqual((package["version"], lock["version"], lock["packages"][""]["version"]), ("0.2.0",) * 3)
+
+    def test_check_rejects_unexpected_generated_output(self) -> None:
+        unexpected = ROOT / "themes" / "unexpected-color-theme.json"
+        unexpected.write_text("{}\n", encoding="utf-8")
+        try:
+            result = generate.write_or_check(generate.render_all(), check=True)
+        finally:
+            unexpected.unlink()
+        self.assertEqual(result, 1)
+
     def test_workbench_coverage(self) -> None:
         colors = self.theme["colors"]
         required = {
