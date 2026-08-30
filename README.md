@@ -20,6 +20,8 @@
 > [!IMPORTANT]
 > This package uses `apollo-theme` as an organization-compatible publisher placeholder and is **not** represented as published in the Visual Studio Marketplace. Install the locally built VSIX instead.
 
+The public **Apollo Dark** variant keeps the existing unsuffixed **Apollo** selector and compatibility identity; **Apollo Light** keeps its existing **Apollo Light** selector and light identity.
+
 ## Coverage
 
 - Workbench and editor chrome, including focus, selection, search, Git, diff, testing, and debugging states.
